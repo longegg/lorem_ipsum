@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-if [ $# -eq 2 ] || [ $# -eq 3 ]; then
+if [ $# -eq 2 ] || [ $# -eq 3 ] || [ $# -eq 4 ]; then
     OK=0
     if [ "$1" = "-w" ]; then
         LOREM_TYPE="words"
@@ -16,8 +16,12 @@ if [ $# -eq 2 ] || [ $# -eq 3 ]; then
     fi
     AMOUNT=$2
     START="yes"
-    if [ $# -eq 3 ] && [ "$3"="-n" ]; then
+    CLIP=false
+    if { [ $# -eq 3 ] || [ $# -eq 4 ]; } && [ "$3"="-n" ]; then
         START="no"
+    fi
+    if { [ $# -eq 3 ] && [ "$3" = "-c" ]; } || { [ $# -eq 4 ] && [ "$4" = "-c" ]; } then
+        CLIP=true
     fi
     if [ $OK -eq 1 ]; then
         RAW_LIPSUM=$(curl -fsSkL "http://www.lipsum.com/feed/xml?amount=$AMOUNT&what=$LOREM_TYPE&start=$START")
@@ -25,11 +29,15 @@ if [ $# -eq 2 ] || [ $# -eq 3 ]; then
         LIPSUM=${RAW_LIPSUM#*<lipsum>}
         #delete after lipsum
         LIPSUM=${LIPSUM%</lipsum>*}
-        echo "$LIPSUM"
+        if [ "$CLIP" = true ]; then
+            echo "$LIPSUM" | xclip -selection clipboard
+        else
+            echo "$LIPSUM"
+        fi
         exit 0
     fi
 else
-    echo 'Usage: lorem_ipsum [-w|-p|-b] N [-n M]'
+    echo 'Usage: lorem_ipsum [-w|-p|-b] N [-n] [-c]'
     echo '  where'
     echo '  N is an integer indicating the number of words/paragraphs/bytes'
     echo '  M can be yes or no which indicates whether the generated word/paragraph/byte starts with "Lorem ipsum ..." It is optional and default value is yes.'
